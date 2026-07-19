@@ -17,14 +17,16 @@ skip a hard board. `Hint` reveals one card of a real set, not the whole answer.
 
 ## Installing on an iPhone
 
-It must be served over **HTTPS or localhost** for the offline cache to install —
-Safari refuses to register a service worker on a plain-HTTP origin. Over a bare
-LAN address it still installs to the home screen and plays fine, it just won't
-work without the server running.
+It is live at **https://dcaloia.github.io/set-game/**, served from `main` by
+GitHub Pages — every push deploys.
 
-1. Serve it (see below) and open the URL **in Safari** — Chrome on iOS cannot
-   add to the home screen.
+1. Open that URL **in Safari** — Chrome on iOS cannot add to the home screen.
 2. Share → **Add to Home Screen**.
+
+It must be served over **HTTPS or localhost** for the offline cache to install —
+Safari refuses to register a service worker on a plain-HTTP origin. The Pages
+URL qualifies. Over a bare LAN address it still installs to the home screen and
+plays fine, it just won't work without the server running.
 
 It then launches full-screen with its own icon, no browser chrome, and — on an
 HTTPS origin — works with no network at all.
@@ -36,9 +38,13 @@ npm start           # serves on http://localhost:5174
 ```
 
 To reach it from the phone on the same Wi-Fi, use the machine's LAN address
-(`ipconfig`), e.g. `http://192.168.1.20:5174`. For a real HTTPS install, put the
-folder on any static host — GitHub Pages, Netlify, Cloudflare Pages. The whole
-app is static files, so any of them work with no configuration.
+(`ipconfig`), e.g. `http://192.168.1.20:5174`. That is only worth doing to test
+an unpushed change; for anything else the Pages URL above is simpler.
+
+Pages serves the repo root from a subpath, which works only because every path
+in `sw.js`, `manifest.webmanifest` and `index.html` is relative. Making any of
+them absolute (`/styles.css`) would break the deployed build while leaving
+localhost fine, so it would not show up until after a push.
 
 ```bash
 npm test            # play 300 full games headlessly and check the invariants
@@ -58,6 +64,11 @@ npx cap add ios && npx cap open ios
 
 which produces an Xcode project to build and sign on the Mac. Nothing in the web
 code needs to change.
+
+This is the one step that genuinely needs macOS — `cap add ios` emits an Xcode
+project, and only Xcode can build or sign it, so it cannot be done from the
+Windows machine this was written on. The Add to Home Screen route above needs no
+Mac and gets the same full-screen offline app, minus the App Store listing.
 
 ## Layout notes
 
