@@ -1,0 +1,333 @@
+/*
+ * SET — Bauhaus-leaning: geometric type, flat ink field, cream plates,
+ * one hot accent doing all the signalling.
+ *
+ * Type is deliberately all system-resident on iOS (Futura, then Avenir Next)
+ * so there is no webfont request — the app must work with no network at all.
+ */
+
+:root {
+  --ink:      #14110E;
+  --ink-lift: #1E1A15;
+  --ink-line: #342E26;
+  --bone:     #F3EDE2;
+  --bone-dim: #A79E8E;
+
+  --red:    #D8412C;
+  --green:  #17876A;
+  --purple: #7050A8;
+  --amber:  #E8AC2E;
+
+  --gap: clamp(6px, 1.8vw, 12px);
+  --radius: 14px;
+
+  --display: 'Futura', 'Avenir Next', 'Century Gothic', 'Trebuchet MS', sans-serif;
+  --body: 'Avenir Next', 'Avenir', 'Futura', 'Segoe UI', sans-serif;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--body);
+  /* A phone game should not rubber-band, zoom on double tap, or show
+     selection carets when you tap a card. */
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Fine grain so the ink field is not a dead flat colour. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  opacity: .32;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+}
+
+.frame {
+  position: relative;
+  z-index: 1;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding:
+    calc(var(--safe-t) + 12px)
+    calc(var(--safe-r) + 14px)
+    calc(var(--safe-b) + 12px)
+    calc(var(--safe-l) + 14px);
+}
+
+/* ---------------------------------------------------------------- HUD --- */
+
+.hud {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex: none;
+}
+
+.hud__brand { display: flex; align-items: baseline; gap: 10px; flex: 1; min-width: 0; }
+
+.hud h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(26px, 8vw, 38px);
+  font-weight: 600;
+  letter-spacing: .22em;
+  line-height: 1;
+  color: var(--bone);
+}
+
+/* The little rule after the wordmark — a Bauhaus tic, and it doubles as a
+   progress bar for how far through the deck you are. */
+.hud__rule {
+  flex: 1;
+  height: 3px;
+  min-width: 12px;
+  background: var(--ink-line);
+  position: relative;
+  overflow: hidden;
+}
+.hud__rule::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--progress, 0%);
+  background: var(--amber);
+  transition: width .45s cubic-bezier(.2,.8,.2,1);
+}
+
+.hud__stats { display: flex; gap: clamp(10px, 4vw, 22px); margin: 0; }
+.stat { text-align: right; }
+.stat dt {
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+}
+.stat dd {
+  margin: 2px 0 0;
+  font-family: var(--display);
+  font-size: clamp(16px, 5vw, 21px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+}
+
+/* -------------------------------------------------------------- flash --- */
+
+.flash {
+  flex: none;
+  margin: 0;
+  min-height: 1.2em;
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  opacity: 0;
+}
+.flash.is-on { opacity: 1; animation: flash-in .28s ease-out; }
+.flash.is-good { color: var(--amber); }
+.flash.is-bad  { color: var(--red); }
+
+@keyframes flash-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* -------------------------------------------------------------- board --- */
+
+.board {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: var(--gap);
+  align-content: stretch;
+}
+
+.card {
+  position: relative;
+  margin: 0;
+  padding: 6%;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--bone);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font: inherit;
+  min-height: 0;
+  box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 6px 14px rgba(0,0,0,.42);
+  transition: transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s ease;
+  animation: deal .34s cubic-bezier(.2,.9,.25,1) backwards;
+}
+
+@keyframes deal {
+  from { opacity: 0; transform: translateY(10px) scale(.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+.card__syms {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7%;
+  width: 100%;
+  height: 100%;
+}
+
+.card svg.sym {
+  height: clamp(14px, 23%, 52px);
+  width: auto;
+  flex: none;
+  overflow: visible;
+}
+
+/* Selection: the plate lifts and takes an amber ring. */
+.card.is-sel {
+  transform: translateY(-6px);
+  box-shadow: 0 0 0 3px var(--amber), 0 12px 22px rgba(0,0,0,.5);
+}
+
+.card.is-hint { box-shadow: 0 0 0 3px var(--green), 0 8px 18px rgba(0,0,0,.45); }
+
+.card.is-good { animation: pop .42s cubic-bezier(.2,.9,.25,1); }
+.card.is-bad  { animation: shake .38s ease-in-out; }
+
+@keyframes pop {
+  0%   { transform: translateY(-6px) scale(1); }
+  45%  { transform: translateY(-10px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  45% { transform: translateX(6px); }
+  70% { transform: translateX(-3px); }
+}
+
+/* Empty slot left behind by a cleared set. */
+.card.is-empty {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-line);
+  cursor: default;
+  animation: none;
+}
+
+/* Symbol colours + shading. */
+.sym.c-red    { --c: var(--red); }
+.sym.c-green  { --c: var(--green); }
+.sym.c-purple { --c: var(--purple); }
+
+.sym use { stroke: var(--c); stroke-width: 6; }
+.sym.f-solid   use { fill: var(--c); }
+.sym.f-open    use { fill: none; }
+.sym.f-striped.c-red    use { fill: url(#stripe-red); }
+.sym.f-striped.c-green  use { fill: url(#stripe-green); }
+.sym.f-striped.c-purple use { fill: url(#stripe-purple); }
+
+/* ----------------------------------------------------------- controls --- */
+
+.controls { flex: none; display: flex; gap: 8px; }
+
+.btn {
+  flex: 1;
+  padding: 13px 10px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .12s ease, opacity .12s ease;
+}
+.btn:active { transform: scale(.96); }
+.btn:disabled { opacity: .3; cursor: default; }
+
+.btn--ghost {
+  flex: 0 0 auto;
+  padding-inline: 18px;
+  background: transparent;
+  color: var(--bone);
+  box-shadow: inset 0 0 0 1.5px var(--ink-line);
+}
+
+/* --------------------------------------------------------- end panel --- */
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10,8,6,.82);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: flash-in .3s ease-out;
+}
+.veil[hidden] { display: none; }
+
+.card-out {
+  width: min(420px, 100%);
+  padding: 26px 24px 22px;
+  border-radius: 18px;
+  background: var(--ink-lift);
+  box-shadow: 0 0 0 1.5px var(--ink-line), 0 24px 60px rgba(0,0,0,.6);
+}
+.card-out h2 {
+  margin: 0 0 18px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.tally { margin: 0 0 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+.tally dt {
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+}
+.tally dd {
+  margin: 3px 0 0;
+  font-family: var(--display);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.tally__best {
+  margin: 0 0 20px;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  min-height: 1.2em;
+}
+.tally__best.is-record { color: var(--amber); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::after { animation: none !important; transition: none !important; }
+}

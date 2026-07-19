@@ -1,0 +1,12 @@
+{
+  "name": "set-game",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The card game Set, as an installable touch app.",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve -l 5174 .",
+    "test": "node tools/simulate.mjs",
+    "icons": "py tools/make_icons.py"
+  }
+}

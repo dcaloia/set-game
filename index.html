@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SET</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="The card game Set, built for touch.">
+<meta name="theme-color" content="#14110E">
+
+<!-- iOS home-screen behaviour -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SET">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Symbol + stripe definitions, referenced by <use> from every card. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <path id="sym-diamond"  d="M50 4 L96 100 L50 196 L4 100 Z"/>
+    <rect id="sym-oval" x="4" y="4" width="92" height="192" rx="46"/>
+    <path id="sym-squiggle" d="M72 8 C90 24 92 56 78 84 C64 112 62 140 76 168
+                               C84 184 72 197 56 192 C36 186 18 170 14 146
+                               C10 120 22 96 34 74 C46 52 44 30 30 14
+                               C24 6 40 -1 56 2 C62 3 68 5 72 8 Z"/>
+
+    <pattern id="stripe-red" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="none"/>
+      <path d="M0 0 V8" stroke="var(--red)" stroke-width="3.4"/>
+    </pattern>
+    <pattern id="stripe-green" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="none"/>
+      <path d="M0 0 V8" stroke="var(--green)" stroke-width="3.4"/>
+    </pattern>
+    <pattern id="stripe-purple" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="none"/>
+      <path d="M0 0 V8" stroke="var(--purple)" stroke-width="3.4"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="frame">
+
+  <header class="hud">
+    <div class="hud__brand">
+      <h1>SET</h1>
+      <span class="hud__rule" aria-hidden="true"></span>
+    </div>
+    <dl class="hud__stats">
+      <div class="stat">
+        <dt>Score</dt>
+        <dd id="score">0</dd>
+      </div>
+      <div class="stat">
+        <dt>Time</dt>
+        <dd id="clock">0:00</dd>
+      </div>
+      <div class="stat">
+        <dt>Deck</dt>
+        <dd id="remaining">69</dd>
+      </div>
+    </dl>
+  </header>
+
+  <p class="flash" id="flash" role="status" aria-live="polite"></p>
+
+  <main class="board" id="board" aria-label="Set board"></main>
+
+  <nav class="controls">
+    <button class="btn" id="btn-hint" type="button">Hint</button>
+    <button class="btn" id="btn-deal" type="button">No Set &middot; Deal 3</button>
+    <button class="btn btn--ghost" id="btn-new" type="button">New</button>
+  </nav>
+
+</div>
+
+<!-- End-of-game panel -->
+<div class="veil" id="veil" hidden>
+  <div class="card-out" role="dialog" aria-modal="true" aria-labelledby="over-title">
+    <h2 id="over-title">Board cleared</h2>
+    <dl class="tally">
+      <div><dt>Sets found</dt><dd id="ov-sets">0</dd></div>
+      <div><dt>Score</dt><dd id="ov-score">0</dd></div>
+      <div><dt>Time</dt><dd id="ov-time">0:00</dd></div>
+      <div><dt>Misses</dt><dd id="ov-miss">0</dd></div>
+    </dl>
+    <p class="tally__best" id="ov-best"></p>
+    <button class="btn" id="btn-again" type="button">Play again</button>
+  </div>
+</div>
+
+<script type="module" src="ui.js"></script>
+</body>
+</html>

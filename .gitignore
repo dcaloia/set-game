@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+
+# Capacitor output, if/when the native wrapper is added
+ios/
+android/
