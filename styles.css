@@ -177,8 +177,11 @@ body::after {
   min-height: 0;
   box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 6px 14px rgba(0,0,0,.42);
   transition: transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s ease;
-  animation: deal .34s cubic-bezier(.2,.9,.25,1) backwards;
 }
+
+/* Deliberately not on .card: only cards render() has just created get this, so
+   selecting a card no longer re-deals the whole board. */
+.card.is-dealing { animation: deal .34s cubic-bezier(.2,.9,.25,1) backwards; }
 
 @keyframes deal {
   from { opacity: 0; transform: translateY(10px) scale(.94); }
@@ -216,7 +219,17 @@ body::after {
   box-shadow: 0 0 0 3px var(--amber), 0 12px 22px rgba(0,0,0,.5);
 }
 
-.card.is-hint { box-shadow: 0 0 0 3px var(--green), 0 8px 18px rgba(0,0,0,.45); }
+/* Pulses twice over its 1400ms life. A static ring on a single card in a grid
+   of twelve is genuinely easy to miss. */
+.card.is-hint {
+  box-shadow: 0 0 0 3px var(--green), 0 8px 18px rgba(0,0,0,.45);
+  animation: hint-pulse .7s ease-in-out 2;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--green), 0 8px 18px rgba(0,0,0,.45); }
+  50%      { box-shadow: 0 0 0 8px rgba(23,135,106,.32), 0 8px 18px rgba(0,0,0,.45); }
+}
 
 .card.is-good { animation: pop .42s cubic-bezier(.2,.9,.25,1); }
 .card.is-bad  { animation: shake .38s ease-in-out; }
@@ -274,6 +287,13 @@ body::after {
 }
 .btn:active { transform: scale(.96); }
 .btn:disabled { opacity: .3; cursor: default; }
+
+/* Deal 3 stays enabled even when it will refuse (see doDeal) — so the refusal
+   has to be felt, not just printed in the flash line. */
+.btn.is-refused {
+  animation: shake .38s ease-in-out;
+  color: var(--red);
+}
 
 .btn--ghost {
   flex: 0 0 auto;

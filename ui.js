@@ -31,6 +31,19 @@ function buzz(ms) {
   if (navigator.vibrate) navigator.vibrate(ms);
 }
 
+/**
+ * Replay a one-shot animation class. The reflow read is what makes a second
+ * press animate at all — without it the class is removed and re-added inside
+ * one frame and the browser never sees a change.
+ */
+function nudge(node, cls, ms) {
+  if (!node) return;
+  node.classList.remove(cls);
+  void node.offsetWidth;
+  node.classList.add(cls);
+  setTimeout(() => node.classList.remove(cls), ms);
+}
+
 function readBest() {
   try { return JSON.parse(localStorage.getItem(BEST_KEY)) || null; }
   catch { return null; }
@@ -53,11 +66,15 @@ function symbolSvg(card) {
   return svg;
 }
 
-function cardEl(card, index) {
+/** Stable identity for a slot, so render() can tell a moved card from a new one. */
+const slotKey = (card, index) => (card ? card.id : `empty:${index}`);
+
+function cardEl(card, index, dealOrder) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'card';
   btn.dataset.index = String(index);
+  btn.dataset.key = slotKey(card, index);
 
   if (!card) {
     btn.classList.add('is-empty');
@@ -67,8 +84,7 @@ function cardEl(card, index) {
   }
 
   btn.setAttribute('aria-label', `${card.count} ${card.color} ${card.fill} ${card.shape}`);
-  btn.setAttribute('aria-pressed', String(game.selected.includes(index)));
-  if (game.selected.includes(index)) btn.classList.add('is-sel');
+  syncCard(btn, card, index);
 
   const wrap = document.createElement('span');
   wrap.className = 'card__syms';
@@ -76,12 +92,65 @@ function cardEl(card, index) {
   btn.appendChild(wrap);
 
   // Stagger the deal so a new board cascades in rather than appearing at once.
-  btn.style.animationDelay = `${Math.min(index, 14) * 22}ms`;
+  // The animation lives on a class, not on .card, so only genuinely new cards
+  // play it — see render().
+  btn.classList.add('is-dealing');
+  btn.style.animationDelay = `${Math.min(dealOrder, 14) * 22}ms`;
+  btn.addEventListener('animationend', () => {
+    btn.classList.remove('is-dealing');
+    btn.style.animationDelay = '';
+  }, { once: true });
+
   return btn;
 }
 
+/** Update a reused node's transient state without rebuilding it. */
+function syncCard(node, card, index) {
+  node.dataset.index = String(index);
+  if (!card) return;
+  const sel = game.selected.includes(index);
+  node.classList.toggle('is-sel', sel);
+  node.classList.remove('is-good', 'is-bad');
+  node.setAttribute('aria-pressed', String(sel));
+}
+
+/**
+ * Reconcile the board in place, keyed by card id.
+ *
+ * This used to be replaceChildren(...game.board.map(cardEl)), which rebuilt all
+ * twelve buttons on every call. Every new node restarted the deal animation, so
+ * a single tap re-dealt the entire board visually — it read as the page
+ * refreshing, and it swamped the hint ring badly enough to look like Hint was
+ * doing nothing. Reusing nodes means only cards that actually changed animate.
+ */
 function render() {
-  boardEl.replaceChildren(...game.board.map(cardEl));
+  const pool = new Map();
+  for (const node of boardEl.children) pool.set(node.dataset.key, node);
+
+  let dealOrder = 0;
+  const next = game.board.map((card, index) => {
+    const key = slotKey(card, index);
+    const found = pool.get(key);
+    if (found) {
+      pool.delete(key);
+      syncCard(found, card, index);
+      return found;
+    }
+    return cardEl(card, index, dealOrder++);
+  });
+
+  // Drop replaced cards *before* positioning. insertBefore inserts rather than
+  // replaces, so leaving a stale node in place pushes every card after it along
+  // by one and cascades into moving almost the whole board — and a moved node
+  // restarts its animation, which is the exact flicker this exists to prevent.
+  // Whatever is left in the pool is precisely the set of nodes no longer used.
+  for (const stale of pool.values()) stale.remove();
+
+  // Now only insert where the child differs, so untouched cards are never
+  // detached.
+  next.forEach((node, i) => {
+    if (boardEl.children[i] !== node) boardEl.insertBefore(node, boardEl.children[i] || null);
+  });
 
   const rows = Math.ceil(game.board.length / BOARD_COLS);
   boardEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
@@ -155,12 +224,9 @@ function doHint() {
   const found = game.hint();
   if (!found) { flash('No set here — deal 3', ''); return; }
 
-  // Reveal one card of a real set, not the whole answer.
-  const node = boardEl.querySelector(`[data-index="${found[0]}"]`);
-  if (node) {
-    node.classList.add('is-hint');
-    setTimeout(() => node.classList.remove('is-hint'), 1400);
-  }
+  // Reveal one card of a real set, not the whole answer. It pulses rather than
+  // sitting still — a static 3px ring on one card is easy to miss entirely.
+  nudge(boardEl.querySelector(`[data-index="${found[0]}"]`), 'is-hint', 1400);
   flash('One of three', '');
 }
 
@@ -169,9 +235,15 @@ function doDeal() {
 
   // Dealing is only legal when the board genuinely has no set — otherwise
   // this would just be a way to skip hard boards.
+  //
+  // The button deliberately stays enabled. Disabling it whenever a set exists
+  // would be a standing free hint: you could read "is there a set here?" off
+  // the button without ever looking at the board. So it accepts the press and
+  // refuses visibly instead.
   if (findSet(game.board)) {
     flash('There is a set here', 'bad');
     buzz(60);
+    nudge(el('btn-deal'), 'is-refused', 400);
     return;
   }
   if (!game.dealThree()) { flash('No cards left', ''); return; }
